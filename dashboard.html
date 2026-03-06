@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Admin</title>
+
+  <!-- Bootstrap: digunakan untuk layout grid, card, dan responsif -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons: digunakan untuk icon menu -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- CSS custom untuk sidebar dan tampilan dashboard -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<!-- cekAdmin(): memastikan hanya admin login yang bisa akses dashboard -->
+<body onload="cekAdmin()">
+
+<!-- Overlay digunakan untuk tampilan sidebar versi mobile -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="d-flex">
+
+  <!-- ================= SIDEBAR ADMIN ================= -->
+  <aside class="sidebar" id="sidebar">
+    <h3>Admin Gym</h3>
+
+    <!-- Menu Dashboard -->
+    <a href="dashboard.html" class="active">Dashboard</a>
+
+    <!-- Menu Data User -->
+    <a href="datauser.html">Users</a>
+
+    <!-- Menu Booking Jadwal -->
+    <a href="databooking.html">Booking</a>
+
+    <!-- Menu Absensi Digital -->
+    <a href="dataabsensi.html">Absensi</a>
+
+    <!-- Menu Pengaturan Slot Latihan -->
+    <a href="slotlatihan.html">Slot Latihan</a>
+
+    <!-- Logout admin -->
+    <a href="#" onclick="logout()">Logout</a>
+  </aside>
+
+  <!-- ================= KONTEN UTAMA ================= -->
+  <main class="content flex-grow-1">
+    <div class="page-container">
+
+      <!-- Header halaman dashboard -->
+      <div class="page-header">
+        <div class="left">
+          <!-- Tombol menu untuk tampilan mobile -->
+          <button class="menu-btn d-md-none" onclick="toggleSidebar()">
+            <i class="bi bi-list"></i>
+          </button>
+          <h2 class="mb-0">Dashboard</h2>
+        </div>
+      </div>
+
+      <!-- ================= CARD DASHBOARD ================= -->
+      <div class="row g-4">
+
+        <!-- ===== CARD JUMLAH USERS ===== -->
+        <!-- Menampilkan total user terdaftar -->
+        <div class="col-12 col-md-4">
+          <div class="card text-white bg-primary shadow">
+            <div class="card-body text-center">
+              <h4 id="userCount">0</h4> <!-- data dari Firebase node "users" -->
+              <p class="mb-0">Users</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== CARD JUMLAH BOOKING ===== -->
+        <!-- Menampilkan total pemesanan jadwal latihan -->
+        <div class="col-12 col-md-4">
+          <div class="card text-white bg-success shadow">
+            <div class="card-body text-center">
+              <h4 id="bookingCount">0</h4> <!-- data dari node "bookings" -->
+              <p class="mb-0">Booking</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== CARD JUMLAH ABSENSI ===== -->
+        <!-- Menampilkan total absensi digital -->
+        <div class="col-12 col-md-4">
+          <div class="card text-white bg-warning shadow">
+            <div class="card-body text-center">
+              <h4 id="absenCount">0</h4> <!-- data dari node "absensi" -->
+              <p class="mb-0">Absensi</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================= FIREBASE ================= -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+<script src="firebase.js"></script>
+
+<script>
+/* ===== CEK LOGIN ADMIN ===== */
+function cekAdmin(){
+  auth.onAuthStateChanged(u=>{
+    if(!u) window.location="index.html"; // redirect jika belum login
+  });
+}
+
+/* ===== TOGGLE SIDEBAR (RESPONSIVE) ===== */
+function toggleSidebar(){
+  document.getElementById("sidebar").classList.toggle("show");
+  document.getElementById("overlay").classList.toggle("show");
+}
+
+/* ===== LOGOUT ADMIN ===== */
+function logout(){
+  auth.signOut().then(()=> window.location="index.html");
+}
+
+/* ===== HITUNG JUMLAH USERS ===== */
+db.ref("users").on("value", s=>{
+  userCount.innerText = s.numChildren();
+});
+
+/* ===== HITUNG JUMLAH BOOKING ===== */
+db.ref("bookings").on("value", s=>{
+  bookingCount.innerText = s.numChildren();
+});
+
+/* ===== HITUNG JUMLAH ABSENSI ===== */
+db.ref("absensi").on("value", s=>{
+  absenCount.innerText = s.numChildren();
+});
+</script>
+
+</body>
+</html>

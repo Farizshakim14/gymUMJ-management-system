@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login Admin Gym</title>
+
+  <!-- Bootstrap digunakan untuk styling form agar rapi dan responsif -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+</head>
+
+<!-- Background halaman login -->
+<body style="background:#f4f6fa">
+
+<!-- ================= CONTAINER LOGIN ================= -->
+<div style="width:400px;margin:120px auto;padding:25px;background:white;border-radius:10px">
+
+  <!-- Judul halaman -->
+  <h3 class="text-center">Login Admin</h3>
+
+  <!-- Input Email Admin -->
+  <input 
+    id="email" 
+    class="form-control mb-2" 
+    placeholder="Email"
+  >
+
+  <!-- Input Password Admin -->
+  <input 
+    id="password" 
+    type="password" 
+    class="form-control mb-3" 
+    placeholder="Password"
+  >
+
+  <!-- Tombol Login -->
+  <!-- Saat diklik akan memanggil fungsi login() -->
+  <button 
+    class="btn btn-primary w-100" 
+    onclick="login()"
+  >
+    Login
+  </button>
+
+  <!-- Pesan error jika login gagal -->
+  <p 
+    id="msg" 
+    class="text-danger text-center mt-2"
+  ></p>
+</div>
+
+<!-- ================= FIREBASE LIBRARY ================= -->
+<!-- Firebase App -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+
+<!-- Firebase Authentication -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+<!-- Firebase Realtime Database -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<!-- File konfigurasi Firebase -->
+<script src="firebase.js"></script>
+
+<script>
+/* ===== FUNGSI LOGIN ADMIN ===== */
+function login(){
+
+  // Ambil nilai email dari input
+  let email = document.getElementById("email").value;
+
+  // Ambil nilai password dari input
+  let pass  = document.getElementById("password").value;
+
+  // Proses autentikasi menggunakan Firebase Authentication
+  auth.signInWithEmailAndPassword(email, pass)
+
+  // Jika login berhasil
+  .then(()=>{
+      // Arahkan admin ke halaman dashboard
+      window.location="dashboard.html";
+  })
+
+  // Jika login gagal
+  .catch(err=>{
+      console.log(err);
+      // Tampilkan pesan error ke user
+      msg.innerText="Login gagal";
+  });
+}
+</script>
+
+</body>
+</html>

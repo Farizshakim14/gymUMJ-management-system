@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+
+<!-- RESPONSIVE -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Data Absensi</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+</head>
+
+<body onload="cekAdmin()">
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="d-flex">
+
+<aside class="sidebar" id="sidebar">
+<h3>Admin Gym</h3>
+<a href="dashboard.html">Dashboard</a>
+<a href="datauser.html">Users</a>
+<a href="databooking.html">Booking</a>
+<a href="dataabsensi.html" class="active">Absensi</a>
+<a href="slotlatihan.html">Slot Latihan</a>
+<a href="#" onclick="logout()">Logout</a>
+</aside>
+
+<main class="content flex-grow-1">
+<div class="page-container">
+
+<div class="page-header">
+<div class="left">
+<button class="menu-btn d-md-none" onclick="toggleSidebar()">
+<i class="bi bi-list"></i>
+</button>
+<h2 class="mb-0">Data Absensi</h2>
+</div>
+</div>
+
+<div class="filter-box mb-3">
+
+<div class="filter-row">
+<label>Filter Tanggal</label>
+<input type="date" id="filterTanggal">
+<button onclick="filterByTanggal()" class="btn btn-primary btn-sm">Terapkan</button>
+<button onclick="resetFilter()" class="btn btn-secondary btn-sm">Reset</button>
+</div>
+
+<div class="filter-row">
+<label>Filter User</label>
+<select id="filterUser"></select>
+<button onclick="filterByUser()" class="btn btn-primary btn-sm">Terapkan</button>
+</div>
+
+<div class="filter-row">
+<label>Export Semua</label>
+<button onclick="downloadPDF()" class="btn btn-danger btn-sm">PDF</button>
+<button onclick="downloadExcel()" class="btn btn-success btn-sm">Excel</button>
+</div>
+
+<div class="filter-row">
+
+<label>Rekap Absensi</label>
+
+<select id="modeRekap" onchange="ubahModeRekap()">
+<option value="">-- Pilih Mode --</option>
+<option value="bulan">Rekap Bulanan</option>
+<option value="tahun">Rekap Tahunan</option>
+</select>
+
+<input type="month" id="bulanRekap" style="display:none;">
+<input type="number" id="tahunRekap" placeholder="2026" style="display:none; width:120px;">
+
+<button onclick="exportRekapPDF()" class="btn btn-danger btn-sm">PDF</button>
+<button onclick="exportRekapExcel()" class="btn btn-success btn-sm">Excel</button>
+
+</div>
+
+</div>
+
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>User</th>
+<th>Tanggal</th>
+<th>Check-In</th>
+<th>Check-Out</th>
+</tr>
+</thead>
+<tbody id="absenTable"></tbody>
+</table>
+</div>
+
+</div>
+</main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+<script src="firebase.js"></script>
+
+<script>
+
+let users={}
+let allData=[]
+
+function cekAdmin(){
+auth.onAuthStateChanged(user=>{
+if(!user) window.location="index.html"
+})
+}
+
+function logout(){
+auth.signOut().then(()=>window.location="index.html")
+}
+
+function toggleSidebar(){
+sidebar.classList.toggle("show")
+overlay.classList.toggle("show")
+}
+
+/* LOAD USERS */
+
+db.ref("users").on("value",snap=>{
+
+let opt=`<option value="">-- Semua User --</option>`
+
+users={}
+
+snap.forEach(u=>{
+users[u.key]=u.val().nama||"-"
+opt+=`<option value="${u.key}">${users[u.key]}</option>`
+})
+
+filterUser.innerHTML=opt
+
+})
+
+/* LOAD ABSENSI */
+
+db.ref("absensi").on("value",snap=>{
+
+let dataMap={}
+allData=[]
+
+snap.forEach(uid=>{
+
+uid.forEach(a=>{
+
+let d=a.val()
+let tanggal=d.tanggal
+let user=users[uid.key]||"-"
+
+let key=uid.key+"_"+tanggal
+
+if(!dataMap[key]){
+dataMap[key]={
+user:user,
+tanggal:tanggal,
+checkin:"",
+checkout:""
+}
+}
+
+if(d.status==="Check-In"){
+dataMap[key].checkin=d.jam
+}
+
+if(d.status==="Check-Out"){
+dataMap[key].checkout=d.jam
+}
+
+})
+
+})
+
+let html=""
+
+for(let k in dataMap){
+
+let d=dataMap[k]
+
+html+=`
+<tr>
+<td data-label="User">${d.user}</td>
+<td data-label="Tanggal">${d.tanggal}</td>
+<td data-label="Check-In">${d.checkin||"-"}</td>
+<td data-label="Check-Out">${d.checkout||"-"}</td>
+</tr>
+`
+
+allData.push(d)
+
+}
+
+absenTable.innerHTML=html||`<tr><td colspan="4">Belum ada absensi</td></tr>`
+
+})
+
+/* FILTER */
+
+function filterByTanggal(){
+let tgl=filterTanggal.value
+let data=allData.filter(d=>d.tanggal===tgl)
+renderTable(data)
+}
+
+function filterByUser(){
+
+let uid=filterUser.value
+let name=users[uid]
+
+let data=allData.filter(d=>d.user===name)
+
+renderTable(data)
+
+}
+
+function resetFilter(){
+location.reload()
+}
+
+function renderTable(data){
+
+let html=""
+
+data.forEach(d=>{
+
+html+=`
+<tr>
+<td data-label="User">${d.user}</td>
+<td data-label="Tanggal">${d.tanggal}</td>
+<td data-label="Check-In">${d.checkin||"-"}</td>
+<td data-label="Check-Out">${d.checkout||"-"}</td>
+</tr>
+`
+
+})
+
+absenTable.innerHTML=html
+
+}
+
+/* EXPORT SEMUA */
+
+function downloadPDF(){
+
+const {jsPDF}=window.jspdf
+let doc=new jsPDF()
+
+let rows=allData.map(d=>[
+d.user,
+d.tanggal,
+d.checkin,
+d.checkout
+])
+
+doc.text("Laporan Absensi Gym",14,15)
+
+doc.autoTable({
+head:[["User","Tanggal","Check-In","Check-Out"]],
+body:rows,
+startY:20
+})
+
+doc.save("absensi_gym.pdf")
+
+}
+
+function downloadExcel(){
+
+let ws=XLSX.utils.json_to_sheet(allData)
+let wb=XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,"Absensi")
+
+XLSX.writeFile(wb,"absensi_gym.xlsx")
+
+}
+
+/* MODE REKAP */
+
+function ubahModeRekap(){
+
+let mode=modeRekap.value
+
+bulanRekap.style.display="none"
+tahunRekap.style.display="none"
+
+if(mode==="bulan"){
+bulanRekap.style.display="inline-block"
+}
+
+if(mode==="tahun"){
+tahunRekap.style.display="inline-block"
+}
+
+}
+
+/* EXPORT REKAP */
+
+function getDataRekap(){
+
+let mode=modeRekap.value
+
+if(mode==="bulan"){
+
+let bulan=bulanRekap.value
+return allData.filter(d=>d.tanggal.startsWith(bulan))
+
+}
+
+if(mode==="tahun"){
+
+let tahun=tahunRekap.value
+return allData.filter(d=>d.tanggal.startsWith(tahun))
+
+}
+
+return []
+
+}
+
+function exportRekapPDF(){
+
+let data=getDataRekap()
+
+exportPDF(data,"rekap_absensi.pdf")
+
+}
+
+function exportRekapExcel(){
+
+let data=getDataRekap()
+
+exportExcel(data,"rekap_absensi.xlsx")
+
+}
+
+function exportPDF(data,file){
+
+const {jsPDF}=window.jspdf
+let doc=new jsPDF()
+
+let rows=data.map(d=>[
+d.user,
+d.tanggal,
+d.checkin,
+d.checkout
+])
+
+doc.autoTable({
+head:[["User","Tanggal","Check-In","Check-Out"]],
+body:rows
+})
+
+doc.save(file)
+
+}
+
+function exportExcel(data,file){
+
+let ws=XLSX.utils.json_to_sheet(data)
+let wb=XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,"Absensi")
+
+XLSX.writeFile(wb,file)
+
+}
+
+</script>
+
+</body>
+</html>
