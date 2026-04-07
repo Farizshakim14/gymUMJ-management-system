@@ -1,89 +1,147 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+  <meta charset="UTF-8">
+
+  <!-- ✅ WAJIB: BIAR RESPONSIVE -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Login Admin Gym</title>
 
-  <!-- Bootstrap digunakan untuk styling form agar rapi dan responsif -->
+  <link rel="icon" type="image/png" href="images/logo-umj.png">
+  <!-- Bootstrap -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+  <!-- CSS utama -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 
-<!-- Background halaman login -->
-<body style="background:#f4f6fa">
+<body class="login-page">
 
-<!-- ================= CONTAINER LOGIN ================= -->
-<div style="width:400px;margin:120px auto;padding:25px;background:white;border-radius:10px">
+<!-- ================= LOGIN WRAPPER ================= -->
+<div class="login-wrapper">
 
-  <!-- Judul halaman -->
-  <h3 class="text-center">Login Admin</h3>
+  <div class="login-box">
 
-  <!-- Input Email Admin -->
-  <input 
-    id="email" 
-    class="form-control mb-2" 
-    placeholder="Email"
-  >
+    <!-- Header -->
+    <div class="login-header">
+      <h2>Admin Gym</h2>
+      <p>Silakan login untuk melanjutkan</p>
+    </div>
 
-  <!-- Input Password Admin -->
-  <input 
-    id="password" 
-    type="password" 
-    class="form-control mb-3" 
-    placeholder="Password"
-  >
+    <!-- Input Email -->
+    <input 
+      id="email" 
+      class="form-control login-input" 
+      placeholder="Masukkan Email"
+    >
 
-  <!-- Tombol Login -->
-  <!-- Saat diklik akan memanggil fungsi login() -->
-  <button 
-    class="btn btn-primary w-100" 
-    onclick="login()"
-  >
-    Login
-  </button>
+    <!-- Input Password -->
+    <input 
+      id="password" 
+      type="password" 
+      class="form-control login-input" 
+      placeholder="Masukkan Password"
+    >
 
-  <!-- Pesan error jika login gagal -->
-  <p 
-    id="msg" 
-    class="text-danger text-center mt-2"
-  ></p>
+    <!-- Button Login -->
+    <button 
+      class="btn login-btn w-100" 
+      onclick="login()"
+    >
+      Login
+    </button>
+
+    <!-- Message -->
+    <p id="msg" class="login-msg"></p>
+
+  </div>
+
 </div>
 
-<!-- ================= FIREBASE LIBRARY ================= -->
-<!-- Firebase App -->
+<!-- ================= FIREBASE ================= -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-
-<!-- Firebase Authentication -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-
-<!-- Firebase Realtime Database -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-<!-- File konfigurasi Firebase -->
 <script src="firebase.js"></script>
 
 <script>
-/* ===== FUNGSI LOGIN ADMIN ===== */
 function login(){
 
-  // Ambil nilai email dari input
   let email = document.getElementById("email").value;
-
-  // Ambil nilai password dari input
   let pass  = document.getElementById("password").value;
 
-  // Proses autentikasi menggunakan Firebase Authentication
   auth.signInWithEmailAndPassword(email, pass)
+  .then((userCredential)=>{
 
-  // Jika login berhasil
-  .then(()=>{
-      // Arahkan admin ke halaman dashboard
-      window.location="dashboard.html";
+      let uid = userCredential.user.uid;
+
+      console.log("UID:", uid);
+
+      firebase.database().ref("users/" + uid).once("value")
+      .then((snapshot)=>{
+
+          if(!snapshot.exists()){
+
+              let roleBaru = "admin";
+
+              if(email === "wadek2@gmail.com"){
+                  roleBaru = "wadek2";
+              }
+
+              return firebase.database().ref("users/" + uid).set({
+                  role: roleBaru
+              });
+          }
+
+      })
+      .then(()=>{
+
+          return firebase.database().ref("users/" + uid).once("value");
+
+      })
+      .then((snapshot)=>{
+
+          let data = snapshot.val();
+
+          if(data.role === "admin"){
+              window.location = "dashboard.html";
+          }
+          else if(data.role === "wadek2"){
+              window.location = "wadek2.html";
+          }
+          else{
+              document.getElementById("msg").innerText="Role tidak dikenali";
+          }
+
+      });
+
   })
-
-  // Jika login gagal
   .catch(err=>{
-      console.log(err);
-      // Tampilkan pesan error ke user
-      msg.innerText="Login gagal";
+      console.log("ERROR:", err.code);
+
+      let pesan = "";
+
+      if(err.code === "auth/user-not-found"){
+          pesan = "Email tidak terdaftar";
+      }
+      else if(err.code === "auth/wrong-password"){
+          pesan = "Password salah";
+      }
+      else if(err.code === "auth/invalid-email"){
+          pesan = "Format email tidak valid";
+      }
+      else if(err.code === "auth/invalid-credential"){
+          pesan = "Email atau password salah";
+      }
+      else{
+          pesan = "Login gagal, coba lagi";
+      }
+
+      document.getElementById("msg").innerText = pesan;
   });
 }
 </script>

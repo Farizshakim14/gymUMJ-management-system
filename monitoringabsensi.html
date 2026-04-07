@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+
+<!-- RESPONSIVE -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Monitoring Absensi</title>
+
+<link rel="icon" type="image/png" href="images/logo-umj.png">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body onload="cekWadek()">
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="d-flex">
+
+<aside class="sidebar" id="sidebar">
+<h3>Wadek 2</h3>
+
+<a href="wadek2.html">Dashboard</a>
+<a href="monitoringuser.html">Monitoring Users</a>
+<a href="monitoringbooking.html">Monitoring Booking</a>
+<a href="monitoringabsensi.html" class="active">Monitoring Absensi</a>
+<a href="monitoringslotlatihan.html">Monitoring Slot</a>
+<a href="#" onclick="logout()">Logout</a>
+</aside>
+
+<main class="content flex-grow-1">
+<div class="page-container">
+
+<div class="page-header">
+<div class="left d-flex align-items-center gap-2">
+
+<button class="menu-btn d-md-none" onclick="toggleSidebar()">
+<span></span>
+<span></span>
+<span></span>
+</button>
+
+<h2 class="mb-0">Monitoring Absensi</h2>
+</div>
+</div>
+
+<!-- FILTER -->
+<div class="filter-card mb-3">
+
+<div class="filter-group">
+<label>📅 Filter Tanggal</label>
+<div class="filter-flex">
+<input type="date" id="filterTanggal">
+<button onclick="filterByTanggal()" class="btn btn-primary btn-sm">Terapkan</button>
+<button onclick="resetFilter()" class="btn btn-secondary btn-sm">Reset</button>
+</div>
+</div>
+
+<div class="filter-group">
+<label>👤 Filter User</label>
+<div class="filter-flex">
+<select id="filterUser"></select>
+<button onclick="filterByUser()" class="btn btn-primary btn-sm">Terapkan</button>
+</div>
+</div>
+
+</div>
+
+<!-- TABLE -->
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>User</th>
+<th>Tanggal</th>
+<th>Check-In</th>
+<th>Check-Out</th>
+</tr>
+</thead>
+<tbody id="absenTable"></tbody>
+</table>
+</div>
+
+</div>
+</main>
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+<script src="firebase.js"></script>
+
+<script>
+
+let users={}
+let allData=[]
+
+// 🔒 CEK WADEK
+function cekWadek(){
+auth.onAuthStateChanged(user=>{
+if(!user) window.location="index.html"
+else{
+db.ref("users/"+user.uid).once("value",snap=>{
+let d=snap.val()
+if(!d || d.role!=="wadek2"){
+alert("Akses ditolak!")
+window.location="index.html"
+}
+})
+}
+})
+}
+
+// 🔥 LOGOUT
+function logout(){
+auth.signOut().then(()=>window.location="index.html")
+}
+
+// 🔥 SIDEBAR
+function toggleSidebar(){
+sidebar.classList.toggle("show")
+overlay.classList.toggle("show")
+}
+
+// 🔥 LOAD USER (UNTUK FILTER)
+db.ref("users").on("value",snap=>{
+
+let opt=`<option value="">-- Semua User --</option>`
+users={}
+
+snap.forEach(u=>{
+if(u.val().role==="admin" || u.val().role==="wadek2") return
+users[u.key]=u.val().nama||"-"
+opt+=`<option value="${u.key}">${users[u.key]}</option>`
+})
+
+filterUser.innerHTML=opt
+
+})
+
+// 🔥 LOAD ABSENSI
+db.ref("absensi").on("value",snap=>{
+
+let dataMap={}
+allData=[]
+
+snap.forEach(uid=>{
+uid.forEach(a=>{
+
+let d=a.val()
+let tanggal=d.tanggal
+let user=users[uid.key]||"-"
+
+let key=uid.key+"_"+tanggal
+
+if(!dataMap[key]){
+dataMap[key]={user:user,tanggal:tanggal,checkin:"",checkout:""}
+}
+
+if(d.status==="Check-In") dataMap[key].checkin=d.jam
+if(d.status==="Check-Out") dataMap[key].checkout=d.jam
+
+})
+})
+
+renderTable(Object.values(dataMap))
+
+})
+
+// 🔥 RENDER
+function renderTable(data){
+let html=""
+
+data.forEach(d=>{
+html+=`
+<tr>
+<td data-label="User">${d.user}</td>
+<td data-label="Tanggal">${d.tanggal}</td>
+<td data-label="Check-In">${d.checkin||"-"}</td>
+<td data-label="Check-Out">${d.checkout||"-"}</td>
+</tr>`
+})
+
+absenTable.innerHTML = html || `<tr><td colspan="4">Belum ada absensi</td></tr>`
+}
+
+// 🔍 FILTER
+function filterByTanggal(){
+let tgl=filterTanggal.value
+renderTable(allData.filter(d=>d.tanggal===tgl))
+}
+
+function filterByUser(){
+let uid=filterUser.value
+let name=users[uid]
+renderTable(allData.filter(d=>d.user===name))
+}
+
+function resetFilter(){
+location.reload()
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+
+  <!-- AGAR RESPONSIVE -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Monitoring Booking</title>
+
+  <link rel="icon" type="image/png" href="images/logo-umj.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body onload="cekWadek()">
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="d-flex">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <h3>Wadek 2</h3>
+
+    <a href="wadek2.html">Dashboard</a>
+    <a href="monitoringuser.html">Monitoring Users</a>
+    <a href="monitoringbooking.html" class="active">Monitoring Booking</a>
+    <a href="monitoringabsensi.html">Monitoring Absensi</a>
+    <a href="monitoringslotlatihan.html">Monitoring Slot</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content flex-grow-1">
+    <div class="page-container">
+
+      <div class="page-header">
+        <div class="left">
+          <button class="menu-btn d-md-none" onclick="toggleSidebar()">
+            <i class="bi bi-list"></i>
+          </button>
+          <h2 class="mb-0">Monitoring Booking</h2>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Tanggal</th>
+              <th>Sesi</th>
+            </tr>
+          </thead>
+          <tbody id="bookingTable"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+<script src="firebase.js"></script>
+
+<script>
+
+// 🔒 CEK WADEK
+function cekWadek(){
+  auth.onAuthStateChanged(u=>{
+    if(!u){
+      location="index.html";
+    }else{
+      db.ref("users/" + u.uid).once("value", snap=>{
+        let data = snap.val();
+        if(!data || data.role !== "wadek2"){
+          alert("Akses ditolak!");
+          location="index.html";
+        }
+      });
+    }
+  });
+}
+
+// 🔥 SIDEBAR
+function toggleSidebar(){
+  sidebar.classList.toggle("show");
+  overlay.classList.toggle("show");
+}
+
+// 🔥 LOGOUT
+function logout(){
+  auth.signOut().then(()=>location="index.html");
+}
+
+// 🔥 LOAD BOOKING (READ ONLY)
+db.ref("bookings").on("value", snap=>{
+
+  let html="";
+
+  snap.forEach(uid=>{
+    uid.forEach(b=>{
+      const d = b.val();
+
+      html+=`
+        <tr>
+          <td data-label="User">${d.user_name||"-"}</td>
+          <td data-label="Tanggal">${d.gym_date||"-"}</td>
+          <td data-label="Sesi">${d.sesi||"-"}</td>
+        </tr>`;
+    });
+  });
+
+  bookingTable.innerHTML = html || `
+    <tr>
+      <td colspan="3" style="text-align:center">
+        Belum ada booking
+      </td>
+    </tr>`;
+});
+
+</script>
+
+</body>
+</html>
