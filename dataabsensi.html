@@ -104,7 +104,26 @@
 
 </div>
 
-<!-- TABLE -->
+<!-- RIWAYAT LAPORAN -->
+<div class="filter-card mb-3" id="riwayatLaporanContainer" style="display:none;">
+<h5 class="mb-3">Riwayat Laporan ke Wadek II</h5>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Tanggal Kirim</th>
+<th>Periode</th>
+<th>Jumlah Data</th>
+<th>Status</th>
+<th>Aksi</th>
+</tr>
+</thead>
+<tbody id="riwayatLaporanTable"></tbody>
+</table>
+</div>
+</div>
+
+<!-- TABLE ABSENSI -->
 <div class="table-wrapper">
 <table>
 <thead>
@@ -337,6 +356,49 @@ function kirimLaporanWadek(){
   }).catch((err) => {
     alert("Gagal mengirim laporan: " + err.message);
   });
+}
+
+// 🔥 LOAD RIWAYAT LAPORAN
+db.ref("laporan_wadek").on("value", snap => {
+  let html = "";
+  let hasLaporan = false;
+  
+  // Reverse order so newest is on top
+  let laporanArr = [];
+  snap.forEach(l => {
+    laporanArr.push({ id: l.key, ...l.val() });
+  });
+  laporanArr.reverse();
+
+  laporanArr.forEach(d => {
+    hasLaporan = true;
+    let statusText = d.status || "Menunggu Persetujuan";
+    let statusBadge = statusText === "Disetujui" ? "bg-success" : (statusText === "Ditolak" ? "bg-danger" : "bg-warning text-dark");
+    
+    html += `
+      <tr>
+        <td data-label="Tanggal Kirim">${new Date(d.tanggal_kirim).toLocaleString('id-ID')}</td>
+        <td data-label="Periode">${d.periode}</td>
+        <td data-label="Jumlah Data">${d.jumlah_data || "-"}</td>
+        <td data-label="Status"><span class="badge ${statusBadge}">${statusText}</span></td>
+        <td data-label="Aksi">
+          <button onclick="hapusLaporan('${d.id}')" class="btn btn-danger btn-sm">Hapus</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  if(hasLaporan) {
+    document.getElementById("riwayatLaporanContainer").style.display = "block";
+    document.getElementById("riwayatLaporanTable").innerHTML = html;
+  } else {
+    document.getElementById("riwayatLaporanContainer").style.display = "none";
+  }
+});
+
+function hapusLaporan(id) {
+  if(!confirm("Yakin ingin menghapus riwayat laporan ini? (Ini juga akan menghapusnya dari dashboard Wadek II)")) return;
+  db.ref("laporan_wadek/" + id).remove();
 }
 
 </script>
