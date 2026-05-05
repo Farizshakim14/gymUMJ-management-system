@@ -156,11 +156,16 @@ let l=new Date(d.tanggal_lahir);
 usia=t.getFullYear()-l.getFullYear();
 }
 
+let genderText = "-";
+if(d.jk === "L") genderText = "Laki-laki";
+else if(d.jk === "P") genderText = "Perempuan";
+else if(d.gender) genderText = d.gender;
+
 html+=`
 <tr>
 
 <td data-label="Nama">${d.nama||"-"}</td>
-<td data-label="Gender">${d.gender||"-"}</td>
+<td data-label="Gender">${genderText}</td>
 <td data-label="Email">${d.email||"-"}</td>
 <td data-label="NIM">${d.nim||"-"}</td>
 <td data-label="Berat">${d.bb||"-"}</td>
@@ -235,7 +240,13 @@ editID=id;
 modalTitle.innerText="Edit User";
 
 namaForm.value=d.nama||"";
-genderForm.value=d.gender||"";
+
+let genderVal = "";
+if(d.jk === "L") genderVal = "Laki-laki";
+else if(d.jk === "P") genderVal = "Perempuan";
+else if(d.gender) genderVal = d.gender;
+genderForm.value=genderVal;
+
 emailForm.value=d.email||"";
 
 passwordForm.value=""; // tidak ubah password
@@ -259,9 +270,14 @@ userModal.style.display="none";
 
 function saveUser(){
 
+let jkVal = "";
+if (genderForm.value === "Laki-laki") jkVal = "L";
+else if (genderForm.value === "Perempuan") jkVal = "P";
+
 let data={
 
 nama:namaForm.value,
+jk:jkVal,
 gender:genderForm.value,
 email:emailForm.value,
 nim:nimForm.value,

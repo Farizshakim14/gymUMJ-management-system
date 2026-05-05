@@ -18,7 +18,7 @@ const db = admin.database();
 
 // 2. Endpoint POST /api/users (Membuat User)
 app.post('/api/users', async (req, res) => {
-  const { nama, email, password, nim, bb, tb, tanggal_lahir, tujuan, gender } = req.body;
+  const { nama, email, password, nim, bb, tb, tanggal_lahir, tujuan, gender, jk } = req.body;
 
   if (!email || !password || !nama) {
     return res.status(400).json({ error: "Nama, Email, dan Password wajib diisi!" });
@@ -43,6 +43,7 @@ app.post('/api/users', async (req, res) => {
       tb: tb || "",
       tanggal_lahir: tanggal_lahir || "",
       tujuan: tujuan || "",
+      jk: jk || "",
       gender: gender || "",
       role: "member"
     });

@@ -142,10 +142,15 @@ db.ref("users").on("value", snapshot=>{
         usia = t.getFullYear() - l.getFullYear();
       }
 
+      let genderText = "-";
+      if(u.jk === "L") genderText = "Laki-laki";
+      else if(u.jk === "P") genderText = "Perempuan";
+      else if(u.gender) genderText = u.gender;
+
       html += `
       <tr>
         <td data-label="Nama">${u.nama || "-"}</td>
-        <td data-label="Gender">${u.gender || "-"}</td>
+        <td data-label="Gender">${genderText}</td>
         <td data-label="Email">${u.email || "-"}</td>
         <td data-label="NIM">${u.nim || "-"}</td>
         <td data-label="Berat">${u.bb || "-"}</td>
