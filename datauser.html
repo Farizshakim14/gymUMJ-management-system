@@ -58,6 +58,7 @@
 <thead>
 <tr>
 <th>Nama</th>
+<th>Gender</th>
 <th>Email</th>
 <th>NIM</th>
 <th>Berat</th>
@@ -87,7 +88,12 @@
 <h3 id="modalTitle" class="mb-3">Tambah User</h3>
 
 <input id="namaForm" placeholder="Nama" class="slot-input">
-<input id="emailForm" placeholder="Email" class="slot-input">
+<select id="genderForm" class="slot-input mt-2">
+  <option value="">-- Pilih Jenis Kelamin --</option>
+  <option value="Laki-laki">Laki-laki</option>
+  <option value="Perempuan">Perempuan</option>
+</select>
+<input id="emailForm" placeholder="Email" class="slot-input mt-2">
 
 <!-- PASSWORD BARU -->
 <input id="passwordForm" type="password" placeholder="Password" class="slot-input">
@@ -154,6 +160,7 @@ html+=`
 <tr>
 
 <td data-label="Nama">${d.nama||"-"}</td>
+<td data-label="Gender">${d.gender||"-"}</td>
 <td data-label="Email">${d.email||"-"}</td>
 <td data-label="NIM">${d.nim||"-"}</td>
 <td data-label="Berat">${d.bb||"-"}</td>
@@ -183,9 +190,16 @@ userTable.innerHTML=html;
 });
 
 
-function hapus(id){
-if(confirm("Yakin hapus user ini?")){
-db.ref("users/"+id).remove();
+async function hapus(id){
+if(confirm("Yakin hapus user ini secara permanen dari Database dan Authentication?")){
+  try {
+    let res = await fetch("http://localhost:3000/api/users/" + id, { method: "DELETE" });
+    let data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+    alert(data.message);
+  } catch(err) {
+    alert("Gagal menghapus user: " + err.message + "\nPastikan backend server berjalan (node server.js)");
+  }
 }
 }
 
@@ -200,6 +214,7 @@ editID=null;
 modalTitle.innerText="Tambah User";
 
 namaForm.value="";
+genderForm.value="";
 emailForm.value="";
 passwordForm.value="";
 nimForm.value="";
@@ -220,6 +235,7 @@ editID=id;
 modalTitle.innerText="Edit User";
 
 namaForm.value=d.nama||"";
+genderForm.value=d.gender||"";
 emailForm.value=d.email||"";
 
 passwordForm.value=""; // tidak ubah password
@@ -246,6 +262,7 @@ function saveUser(){
 let data={
 
 nama:namaForm.value,
+gender:genderForm.value,
 email:emailForm.value,
 nim:nimForm.value,
 bb:bbForm.value,
@@ -274,21 +291,20 @@ alert("Password wajib diisi!");
 return;
 }
 
-auth.createUserWithEmailAndPassword(data.email,password)
-
-.then(res=>{
-
-let uid=res.user.uid;
-
-db.ref("users/"+uid).set(data);
-
+fetch("http://localhost:3000/api/users", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({...data, password: password})
 })
-
-.catch(err=>{
-
-alert(err.message);
-
-});
+.then(res => res.json().then(d => ({ok: res.ok, body: d})))
+.then(res => {
+  if(res.ok) {
+    alert("Berhasil membuat user!");
+  } else {
+    alert("Gagal: " + res.body.error);
+  }
+})
+.catch(err => alert("Gagal koneksi ke server: " + err.message + "\nPastikan backend server berjalan (node server.js)"));
 
 }
 

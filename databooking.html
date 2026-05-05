@@ -61,6 +61,7 @@
               <th>User</th>
               <th>Tanggal</th>
               <th>Sesi</th>
+              <th>Status</th>
               <th style="width:140px">Aksi</th>
             </tr>
           </thead>
@@ -132,8 +133,8 @@ db.ref("users").on("value", snap=>{
   users={};
 
   snap.forEach(u=>{
-    users[u.key] = u.val().nama || "-";
-    opt += `<option value="${u.key}">${users[u.key]}</option>`;
+    users[u.key] = u.val();
+    opt += `<option value="${u.key}">${u.val().nama || "-"}</option>`;
   });
 
   userSelect.innerHTML = opt;
@@ -183,17 +184,29 @@ db.ref("bookings").on("value", snap=>{
   snap.forEach(uid=>{
     uid.forEach(b=>{
       const d=b.val();
+      const statusText = d.status || "Pending";
+      const statusBadge = statusText === "Disetujui" ? "bg-success" : (statusText === "Ditolak" ? "bg-danger" : "bg-warning text-dark");
+
+      let actionButtons = "";
+      if(statusText === "Pending") {
+        actionButtons = `
+          <button class="btn btn-success btn-sm mb-1" onclick="updateStatusBooking('${uid.key}','${b.key}','Disetujui')">ACC</button>
+          <button class="btn btn-danger btn-sm mb-1" onclick="hapusBooking('${uid.key}','${b.key}')">Tolak</button>
+        `;
+      } else {
+        actionButtons = `
+          <button class="btn btn-danger btn-sm" onclick="hapusBooking('${uid.key}','${b.key}')">Hapus</button>
+        `;
+      }
 
       html+=`
         <tr>
           <td data-label="User">${d.user_name||"-"}</td>
           <td data-label="Tanggal">${d.gym_date||"-"}</td>
           <td data-label="Sesi">${d.sesi||"-"}</td>
+          <td data-label="Status"><span class="badge ${statusBadge}">${statusText}</span></td>
           <td data-label="Aksi">
-            <button class="btn btn-danger btn-sm"
-              onclick="hapusBooking('${uid.key}','${b.key}')">
-              Hapus
-            </button>
+            ${actionButtons}
           </td>
         </tr>`;
     });
@@ -208,57 +221,83 @@ db.ref("bookings").on("value", snap=>{
 });
 
 /* HAPUS BOOKING + BALIKIN SLOT */
+function updateStatusBooking(uid, id, status) {
+  if(!confirm("Apakah Anda yakin ingin menyetujui booking ini?")) return;
+  
+  db.ref("bookings/"+uid+"/"+id).once("value", snap => {
+    let data = snap.val();
+    if(!data) return;
+
+    if(status === "Disetujui") {
+      let tanggal = data.gym_date;
+      let jam = normalize(data.sesi.match(/\((.*?)\)/)[1]);
+
+      db.ref("slots").orderByChild("date").equalTo(tanggal).once("value", slotSnap => {
+        let target = null;
+        slotSnap.forEach(s => {
+          if(normalize(s.val().time) === jam) target = s.ref;
+        });
+
+        if(target) {
+          target.transaction(d => {
+            if(!d) return;
+            const rem = d.remaining ?? d.kapasitas ?? 0;
+            if(rem <= 0) return; // cancel transaction
+            d.remaining = rem - 1;
+            return d;
+          }, (error, committed, snapshot) => {
+            if(error) {
+              alert("Terjadi kesalahan sistem.");
+            } else if(!committed) {
+              alert("Gagal: Slot sudah penuh!");
+            } else {
+              db.ref("bookings/"+uid+"/"+id).update({ status: status });
+            }
+          });
+        } else {
+          alert("Slot tidak ditemukan.");
+        }
+      });
+    } else {
+      db.ref("bookings/"+uid+"/"+id).update({ status: status });
+    }
+  });
+}
+
 function hapusBooking(uid,id){
 
-  if(!confirm("Hapus booking ini?")) return;
+  if(!confirm("Hapus atau Tolak booking ini?")) return;
 
   const ref = db.ref("bookings/"+uid+"/"+id);
 
   ref.once("value", snap=>{
-
     const data = snap.val();
-
     if(!data){
       ref.remove();
       return;
     }
 
-    const tanggal = data.gym_date;
-    const sesi = data.sesi;
+    if (data.status === "Disetujui") {
+      const tanggal = data.gym_date;
+      const jam = normalize(data.sesi.match(/\((.*?)\)/)[1]);
 
-    const jam = normalize(sesi.match(/\((.*?)\)/)[1]);
-
-    db.ref("slots")
-      .orderByChild("date")
-      .equalTo(tanggal)
-      .once("value", slotSnap=>{
-
+      db.ref("slots").orderByChild("date").equalTo(tanggal).once("value", slotSnap=>{
         slotSnap.forEach(s=>{
-
           if(normalize(s.val().time) === jam){
-
             s.ref.transaction(d=>{
-
               if(!d) return;
-
               const rem = d.remaining ?? d.kapasitas ?? 0;
-
               d.remaining = rem + 1;
-
               return d;
-
             });
-
           }
-
         });
-
         ref.remove();
-
       });
-
+    } else {
+      ref.remove(); // Jika status pending/ditolak, tidak perlu mengembalikan kapasitas
+    }
   });
-
 }
 
 function openAdd(){
@@ -269,11 +308,11 @@ function closeModal(){
   bookingModal.style.display="none";
 }
 
-/* SIMPAN BOOKING */
 function saveBooking(){
 
   const uid = userSelect.value;
-  const nama = users[uid];
+  const nama = users[uid]?.nama || "-";
+  const userGender = users[uid]?.gender || "Campur";
   const tanggal = tanggalForm.value;
   const sesi = sessionForm.value;
 
@@ -290,16 +329,16 @@ function saveBooking(){
     .once("value", snap=>{
 
       let target=null;
+      let targetData=null;
 
       snap.forEach(s=>{
-
         if(
           normalize(s.val().time) === jam &&
           (s.val().remaining ?? s.val().kapasitas) > 0
         ){
           target = s.ref;
+          targetData = s.val();
         }
-
       });
 
       if(!target){
@@ -307,20 +346,15 @@ function saveBooking(){
         return;
       }
 
-      target.transaction(data=>{
+      // Validasi Gender
+      const slotGender = targetData.gender || "Campur";
+      if (slotGender !== "Campur" && userGender !== slotGender) {
+        alert("Gagal: Slot ini khusus untuk " + slotGender + "!");
+        return;
+      }
 
-        if(!data) return;
-
-        const rem = data.remaining ?? data.kapasitas ?? 0;
-
-        if(rem <= 0) return;
-
-        data.remaining = rem - 1;
-
-        return data;
-
-      });
-
+      // Hapus pengurangan kapasitas di sini. Kapasitas hanya berkurang jika di-ACC.
+      
       const id = db.ref("bookings/"+uid).push().key;
 
       db.ref("bookings/"+uid+"/"+id).set({
@@ -329,6 +363,7 @@ function saveBooking(){
         user_name: nama,
         gym_date: tanggal,
         sesi: sesi,
+        status: "Pending",
         created_at: new Date().toISOString()
 
       });

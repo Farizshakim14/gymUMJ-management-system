@@ -53,6 +53,7 @@
               <th>User</th>
               <th>Tanggal</th>
               <th>Sesi</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody id="bookingTable"></tbody>
@@ -107,19 +108,22 @@ db.ref("bookings").on("value", snap=>{
   snap.forEach(uid=>{
     uid.forEach(b=>{
       const d = b.val();
+      const statusText = d.status || "Pending";
+      const statusBadge = statusText === "Disetujui" ? "bg-success" : (statusText === "Ditolak" ? "bg-danger" : "bg-warning text-dark");
 
       html+=`
         <tr>
           <td data-label="User">${d.user_name||"-"}</td>
           <td data-label="Tanggal">${d.gym_date||"-"}</td>
           <td data-label="Sesi">${d.sesi||"-"}</td>
+          <td data-label="Status"><span class="badge ${statusBadge}">${statusText}</span></td>
         </tr>`;
     });
   });
 
   bookingTable.innerHTML = html || `
     <tr>
-      <td colspan="3" style="text-align:center">
+      <td colspan="4" style="text-align:center">
         Belum ada booking
       </td>
     </tr>`;

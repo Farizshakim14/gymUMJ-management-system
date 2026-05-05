@@ -97,6 +97,7 @@
 
 <button onclick="exportRekapPDF()" class="btn btn-danger btn-sm">PDF</button>
 <button onclick="exportRekapExcel()" class="btn btn-success btn-sm">Excel</button>
+<button onclick="kirimLaporanWadek()" class="btn btn-warning btn-sm">Kirim ke Wadek II</button>
 
 </div>
 </div>
@@ -305,6 +306,37 @@ let ws=XLSX.utils.json_to_sheet(data)
 let wb=XLSX.utils.book_new()
 XLSX.utils.book_append_sheet(wb,ws,"Absensi")
 XLSX.writeFile(wb,file)
+}
+
+function kirimLaporanWadek(){
+  const data = getDataRekap();
+  if(data.length === 0) {
+    alert("Tidak ada data rekap untuk dikirim!");
+    return;
+  }
+  
+  let periode = "";
+  if(modeRekap.value === "bulan") periode = "Bulan: " + bulanRekap.value;
+  else if(modeRekap.value === "tahun") periode = "Tahun: " + tahunRekap.value;
+  else {
+    alert("Pilih mode rekap terlebih dahulu!");
+    return;
+  }
+
+  if(!confirm("Kirim Laporan Absensi (" + periode + ") ke Wakil Dekan II?")) return;
+
+  db.ref("laporan_wadek").push({
+    tanggal_kirim: new Date().toISOString(),
+    mode: modeRekap.value,
+    periode: periode,
+    jumlah_data: data.length,
+    data: data,
+    status: "Menunggu Persetujuan"
+  }).then(() => {
+    alert("Laporan berhasil dikirim ke Wakil Dekan II!");
+  }).catch((err) => {
+    alert("Gagal mengirim laporan: " + err.message);
+  });
 }
 
 </script>

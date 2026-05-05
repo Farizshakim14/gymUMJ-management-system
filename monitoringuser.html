@@ -57,6 +57,7 @@
           <thead>
             <tr>
               <th>Nama</th>
+              <th>Gender</th>
               <th>Email</th>
               <th>NIM</th>
               <th>Berat</th>
@@ -68,7 +69,7 @@
 
           <tbody id="userTable">
             <tr>
-              <td colspan="7" style="text-align:center;">Loading...</td>
+              <td colspan="8" style="text-align:center;">Loading...</td>
             </tr>
           </tbody>
 
@@ -123,7 +124,7 @@ db.ref("users").on("value", snapshot=>{
   let html = "";
 
   if(!data){
-    html = `<tr><td colspan="7" style="text-align:center;">Tidak ada data</td></tr>`;
+    html = `<tr><td colspan="8" style="text-align:center;">Tidak ada data</td></tr>`;
   }else{
 
     Object.keys(data).forEach(uid=>{
@@ -144,6 +145,7 @@ db.ref("users").on("value", snapshot=>{
       html += `
       <tr>
         <td data-label="Nama">${u.nama || "-"}</td>
+        <td data-label="Gender">${u.gender || "-"}</td>
         <td data-label="Email">${u.email || "-"}</td>
         <td data-label="NIM">${u.nim || "-"}</td>
         <td data-label="Berat">${u.bb || "-"}</td>

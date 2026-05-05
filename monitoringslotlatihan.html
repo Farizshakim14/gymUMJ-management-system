@@ -56,6 +56,7 @@
 <tr>
 <th>Tanggal</th>
 <th>Jam</th>
+<th>Gender</th>
 <th>Kapasitas</th>
 <th>Sisa Slot</th>
 </tr>
@@ -121,6 +122,7 @@ html += `
 <tr>
 <td data-label="Tanggal">${d.date || "-"}</td>
 <td data-label="Jam">${d.time || "-"}</td>
+<td data-label="Gender">${d.gender || "Campur"}</td>
 <td data-label="Kapasitas">${kapasitas}</td>
 <td data-label="Sisa Slot">${sisa}</td>
 </tr>
@@ -130,7 +132,7 @@ html += `
 
 slotTable.innerHTML = html || `
 <tr>
-<td colspan="4" style="text-align:center">
+<td colspan="5" style="text-align:center">
 Belum ada slot latihan
 </td>
 </tr>

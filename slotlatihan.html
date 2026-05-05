@@ -57,6 +57,7 @@
             <tr>
               <th>Tanggal</th>
               <th>Waktu</th>
+              <th>Gender</th>
               <th>Status</th>
               <th>Sisa Kapasitas</th>
               <th style="width:160px">Aksi</th>
@@ -82,6 +83,12 @@
       <option value="08:00-10:00">08:00-10:00</option>
       <option value="10:00-12:00">10:00-12:00</option>
       <option value="13:00-15:00">13:00-15:00</option>
+    </select>
+
+    <select id="genderForm" class="slot-input">
+      <option value="Campur">Campur (L/P)</option>
+      <option value="Laki-laki">Khusus Laki-laki</option>
+      <option value="Perempuan">Khusus Perempuan</option>
     </select>
 
     <input id="kapasitasForm" type="number" class="slot-input" placeholder="Kapasitas">
@@ -130,6 +137,7 @@ function saveSlot(){
   const date = tanggalForm.value;
   const time = normalize(waktuForm.value);
   const kapasitas = parseInt(kapasitasForm.value);
+  const gender = genderForm.value;
 
   if(!date || !time || !kapasitas){
     alert("Lengkapi data!");
@@ -155,6 +163,7 @@ function saveSlot(){
         time,
         kapasitas,
         remaining: kapasitas,
+        gender: gender,
         status: "Aktif"
       });
 
@@ -183,6 +192,7 @@ db.ref("slots").on("value", snap=>{
       <tr>
         <td data-label="Tanggal">${slot.date}</td>
         <td data-label="Waktu">${slot.time}</td>
+        <td data-label="Gender">${slot.gender || 'Campur'}</td>
         <td data-label="Status">
           <span class="badge ${status==="Aktif"?"bg-success":"bg-danger"}">
             ${status}

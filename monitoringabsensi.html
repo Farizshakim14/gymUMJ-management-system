@@ -13,6 +13,10 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 </head>
 
 <body onload="cekWadek()">
@@ -45,6 +49,24 @@
 </button>
 
 <h2 class="mb-0">Monitoring Absensi</h2>
+</div>
+</div>
+
+<!-- LAPORAN WADEK -->
+<div class="filter-card mb-3" id="laporanWadekContainer" style="display:none;">
+<h5 class="mb-3">Laporan dari Admin</h5>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Tanggal Kirim</th>
+<th>Periode</th>
+<th>Status</th>
+<th>Aksi</th>
+</tr>
+</thead>
+<tbody id="laporanTable"></tbody>
+</table>
 </div>
 </div>
 
@@ -171,6 +193,73 @@ if(d.status==="Check-Out") dataMap[key].checkout=d.jam
 renderTable(Object.values(dataMap))
 
 })
+
+// 🔥 LOAD LAPORAN WADEK
+db.ref("laporan_wadek").on("value", snap => {
+  let html = "";
+  let hasLaporan = false;
+  snap.forEach(l => {
+    hasLaporan = true;
+    let d = l.val();
+    let id = l.key;
+    let statusText = d.status || "Menunggu Persetujuan";
+    let statusBadge = statusText === "Disetujui" ? "bg-success" : "bg-warning text-dark";
+    
+    let btnSetuju = statusText !== "Disetujui" ? `<button onclick="setujuLaporan('${id}')" class="btn btn-success btn-sm mb-1">Setuju</button>` : "";
+    let btnDownload = `<button onclick="downloadLaporan('${id}')" class="btn btn-primary btn-sm mb-1">Download PDF</button>`;
+
+    html += `
+      <tr>
+        <td data-label="Tanggal Kirim">${new Date(d.tanggal_kirim).toLocaleString('id-ID')}</td>
+        <td data-label="Periode">${d.periode}</td>
+        <td data-label="Status"><span class="badge ${statusBadge}">${statusText}</span></td>
+        <td data-label="Aksi">
+          ${btnSetuju}
+          ${btnDownload}
+        </td>
+      </tr>
+    `;
+  });
+
+  if(hasLaporan) {
+    document.getElementById("laporanWadekContainer").style.display = "block";
+    document.getElementById("laporanTable").innerHTML = html;
+  } else {
+    document.getElementById("laporanWadekContainer").style.display = "none";
+  }
+});
+
+function setujuLaporan(id) {
+  if(!confirm("Setujui laporan ini?")) return;
+  db.ref("laporan_wadek/" + id).update({ status: "Disetujui" });
+}
+
+function downloadLaporan(id) {
+  db.ref("laporan_wadek/" + id).once("value", snap => {
+    let d = snap.val();
+    if(!d || !d.data) {
+      alert("Data laporan tidak ditemukan!");
+      return;
+    }
+    
+    const {jsPDF} = window.jspdf;
+    let doc = new jsPDF();
+    
+    let rows = d.data.map(item => [
+      item.user,
+      item.tanggal,
+      item.checkin || "-",
+      item.checkout || "-"
+    ]);
+    
+    doc.autoTable({
+      head: [["User", "Tanggal", "Check-In", "Check-Out"]],
+      body: rows
+    });
+    
+    doc.save("Laporan_Absensi_" + d.periode.replace(/\s+/g, '_') + ".pdf");
+  });
+}
 
 // 🔥 RENDER
 function renderTable(data){
