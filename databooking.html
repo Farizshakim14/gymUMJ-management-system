@@ -97,6 +97,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
 <script src="firebase.js"></script>
+<script src="notifications.js"></script>
 
 <script>
 
@@ -117,11 +118,38 @@ function logout(){
 
 /* NORMALIZE JAM */
 function normalize(text){
-  return text
-    .replace(/[^\d:-]/g,"")
-    .replace(".",":")
+  if(text === undefined || text === null) return "";
+  return String(text)
     .replace(/\s/g,"")
+    .replace(/\./g,":")           // dukung format waktu pakai titik (08.00)
+    .replace(/[–—]/g,"-")        // dukung en-dash/em-dash
+    .replace(/[^\d:-]/g,"")      // tinggalin angka, :, -
     .trim();
+}
+
+// Ambil waktu (jam) dari field `sesi` yang formatnya bisa berbeda-beda.
+// Contoh format: "Sesi 1 (08:00-10:00)" atau "08:00-10:00" atau variasi lain.
+function extractJamFromSesi(sesi){
+  const text = String(sesi ?? "");
+  if(!text) return "";
+
+  // 1) Prefer ambil isi di dalam "( ... )"
+  const parenMatch = text.match(/\((.*?)\)/);
+  if(parenMatch && parenMatch[1]){
+    return normalize(parenMatch[1]);
+  }
+
+  // 2) Kalau tidak ada kurung, coba cari pola rentang waktu "HH:MM-HH:MM"
+  const cleaned = text
+    .replace(/\./g,":")
+    .replace(/[–—]/g,"-");
+  const timeMatch = cleaned.match(/(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/);
+  if(timeMatch && timeMatch[1]){
+    return normalize(timeMatch[1]);
+  }
+
+  // 3) Fallback: normalisasi full string (harapannya mengandung jam)
+  return normalize(text);
 }
 
 let users = {};
@@ -230,7 +258,11 @@ function updateStatusBooking(uid, id, status) {
 
     if(status === "Disetujui") {
       let tanggal = data.gym_date;
-      let jam = normalize(data.sesi.match(/\((.*?)\)/)[1]);
+      let jam = extractJamFromSesi(data.sesi);
+      if(!jam){
+        alert("Format sesi booking tidak dikenali.");
+        return;
+      }
 
       db.ref("slots").orderByChild("date").equalTo(tanggal).once("value", slotSnap => {
         let target = null;
@@ -279,7 +311,12 @@ function hapusBooking(uid,id){
 
     if (data.status === "Disetujui") {
       const tanggal = data.gym_date;
-      const jam = normalize(data.sesi.match(/\((.*?)\)/)[1]);
+      const jam = extractJamFromSesi(data.sesi);
+      if(!jam){
+        // Kalau format sesi tidak dikenali, kita tidak bisa mengembalikan kapasitas.
+        alert("Format sesi tidak dikenali, tidak bisa mengembalikan kapasitas.");
+        return;
+      }
 
       db.ref("slots").orderByChild("date").equalTo(tanggal).once("value", slotSnap=>{
         slotSnap.forEach(s=>{
@@ -321,7 +358,11 @@ function saveBooking(){
     return;
   }
 
-  const jam = normalize(sesi.match(/\((.*?)\)/)[1]);
+  const jam = extractJamFromSesi(sesi);
+  if(!jam){
+    alert("Format sesi tidak dikenali.");
+    return;
+  }
 
   db.ref("slots")
     .orderByChild("date")

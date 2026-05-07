@@ -132,6 +132,7 @@
 <th>Tanggal</th>
 <th>Check-In</th>
 <th>Check-Out</th>
+<th>Aksi</th>
 </tr>
 </thead>
 <tbody id="absenTable"></tbody>
@@ -146,6 +147,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
 <script src="firebase.js"></script>
+<script src="notifications.js"></script>
 
 <script>
 
@@ -196,7 +198,7 @@ let user=users[uid.key]||"-"
 let key=uid.key+"_"+tanggal
 
 if(!dataMap[key]){
-dataMap[key]={user:user,tanggal:tanggal,checkin:"",checkout:""}
+dataMap[key]={uid:uid.key,user:user,tanggal:tanggal,checkin:"",checkout:""}
 }
 
 if(d.status==="Check-In") dataMap[key].checkin=d.jam
@@ -216,12 +218,15 @@ html+=`
 <td data-label="Tanggal">${d.tanggal}</td>
 <td data-label="Check-In">${d.checkin||"-"}</td>
 <td data-label="Check-Out">${d.checkout||"-"}</td>
+<td data-label="Aksi">
+<button onclick="hapusAbsensi('${d.uid}','${d.tanggal}')" class="btn btn-danger btn-sm">Hapus</button>
+</td>
 </tr>`
 
 allData.push(d)
 }
 
-absenTable.innerHTML=html||`<tr><td colspan="4">Belum ada absensi</td></tr>`
+absenTable.innerHTML=html||`<tr><td colspan="5">Belum ada absensi</td></tr>`
 
 })
 
@@ -247,9 +252,44 @@ html+=`
 <td data-label="Tanggal">${d.tanggal}</td>
 <td data-label="Check-In">${d.checkin||"-"}</td>
 <td data-label="Check-Out">${d.checkout||"-"}</td>
+<td data-label="Aksi">
+<button onclick="hapusAbsensi('${d.uid}','${d.tanggal}')" class="btn btn-danger btn-sm">Hapus</button>
+</td>
 </tr>`
 })
-absenTable.innerHTML=html
+absenTable.innerHTML=html||`<tr><td colspan="5">Belum ada absensi</td></tr>`
+}
+
+function hapusAbsensi(uid,tanggal){
+  if(!confirm("Yakin ingin menghapus absensi user di tanggal " + tanggal + "?")) return;
+
+  const userAbsensiRef = db.ref("absensi/" + uid);
+  userAbsensiRef.once("value", snap => {
+    if(!snap.exists()){
+      alert("Data absensi tidak ditemukan.");
+      return;
+    }
+
+    const updates = {};
+    let ditemukan = false;
+
+    snap.forEach(a => {
+      const d = a.val() || {};
+      if(d.tanggal === tanggal){
+        updates[a.key] = null; // hapus check-in/check-out pada tanggal tersebut
+        ditemukan = true;
+      }
+    });
+
+    if(!ditemukan){
+      alert("Data absensi untuk tanggal ini tidak ditemukan.");
+      return;
+    }
+
+    userAbsensiRef.update(updates)
+      .then(() => alert("Data absensi berhasil dihapus."))
+      .catch(err => alert("Gagal menghapus absensi: " + err.message));
+  });
 }
 
 function downloadPDF(){

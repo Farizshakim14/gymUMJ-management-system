@@ -46,9 +46,11 @@
           <h2 class="mb-0">Slot Latihan</h2>
         </div>
 
+        <div class="right">
         <button onclick="openAdd()" class="btn btn-primary">
           + Tambah Slot
         </button>
+        </div>
       </div>
 
       <div class="table-wrapper">
@@ -60,7 +62,7 @@
               <th>Gender</th>
               <th>Status</th>
               <th>Sisa Kapasitas</th>
-              <th style="width:160px">Aksi</th>
+              <th style="width:120px">Aksi</th>
             </tr>
           </thead>
           <tbody id="slotTable"></tbody>
@@ -102,6 +104,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
 <script src="firebase.js"></script>
+<script src="notifications.js"></script>
 
 <script>
 function toggleSidebar(){
