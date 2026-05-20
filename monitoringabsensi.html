@@ -124,6 +124,9 @@ let users={}
 let allData=[]
 
 // 🔒 CEK WADEK
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Keamanan dan Hak Akses Role-Based): 
+// Kode ini memvalidasi apakah user yang login memiliki peran (role) sebagai "wadek2". 
+// Jika bukan, sistem menolak akses. Ini adalah bukti implementasi sistem keamanan role-based access control.
 function cekWadek(){
 auth.onAuthStateChanged(user=>{
 if(!user) window.location="index.html"
@@ -230,6 +233,9 @@ db.ref("laporan_wadek").on("value", snap => {
   }
 });
 
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Approval System / Persetujuan): 
+// Ini adalah tindak lanjut dari workflow pelaporan. Wakil Dekan II dapat memberikan persetujuan (Approval)
+// dengan mengubah status laporan menjadi "Disetujui" di database.
 function setujuLaporan(id) {
   if(!confirm("Setujui laporan ini?")) return;
   db.ref("laporan_wadek/" + id).update({ status: "Disetujui" });

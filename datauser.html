@@ -134,6 +134,9 @@ if(!u) window.location="index.html";
 }
 
 
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Read Data & Menghitung Usia Otomatis): 
+// Bagian ini penting karena menunjukkan bagaimana sistem mengambil data user secara real-time dari Firebase 
+// dan melakukan perhitungan usia secara otomatis berdasarkan tanggal lahir.
 db.ref("users").on("value", snap=>{
 
 let html="";
@@ -198,6 +201,9 @@ userTable.innerHTML=html;
 });
 
 
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Hapus User via API Backend): 
+// Menunjukkan integrasi frontend dengan backend Node.js untuk menghapus user secara permanen
+// baik di Firebase Realtime Database maupun Firebase Authentication.
 async function hapus(id){
 if(confirm("Yakin hapus user ini secara permanen dari Database dan Authentication?")){
   try {
@@ -271,6 +277,9 @@ userModal.style.display="none";
 }
 
 
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Simpan & Update User via API): 
+// Bagian ini penting karena menampilkan logika validasi form dan pengiriman data ke backend (POST) 
+// untuk mendaftarkan user baru ke Firebase Auth sekaligus menyimpan biodatanya ke Database.
 function saveUser(){
 
 let jkVal = "";

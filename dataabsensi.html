@@ -184,6 +184,9 @@ filterUser.innerHTML=opt
 
 })
 
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Pemrosesan Data Absensi): 
+// Kode ini sangat penting karena mengubah format data mentah absensi dari Firebase 
+// menjadi format yang mudah dibaca (menggabungkan waktu Check-In dan Check-Out dalam satu baris per user per hari).
 db.ref("absensi").on("value",snap=>{
 
 let dataMap={}
@@ -292,6 +295,9 @@ function hapusAbsensi(uid,tanggal){
   });
 }
 
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Fitur Export Laporan PDF): 
+// Fitur krusial untuk pelaporan. Menunjukkan penggunaan library eksternal (jsPDF & autoTable) 
+// untuk menghasilkan dokumen resmi dari data web.
 function downloadPDF(){
 
 const {jsPDF} = window.jspdf
@@ -367,6 +373,9 @@ XLSX.utils.book_append_sheet(wb,ws,"Absensi")
 XLSX.writeFile(wb,file)
 }
 
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Workflow Pengiriman Laporan): 
+// Bagian ini menunjukkan alur sistem (workflow) di mana Admin mengirimkan rekap absensi 
+// ke Wakil Dekan II dengan status "Menunggu Persetujuan".
 function kirimLaporanWadek(){
   const data = getDataRekap();
   if(data.length === 0) {

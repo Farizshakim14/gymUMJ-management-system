@@ -136,6 +136,9 @@ function normalize(text){
 }
 
 /* ===== SIMPAN SLOT ===== */
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Validasi Slot Duplikat): 
+// Logika ini penting untuk dibahas karena mencegah admin membuat slot latihan pada jam dan tanggal 
+// yang sama. Ini adalah bagian dari "Business Rules" (Aturan Bisnis) aplikasi gym.
 function saveSlot(){
   const date = tanggalForm.value;
   const time = normalize(waktuForm.value);
@@ -181,6 +184,9 @@ function deleteSlot(id){
 }
 
 /* ===== LOAD SLOT ===== */
+// 🔥 PENTING UNTUK BAB 4 SKRIPSI (Penentuan Status Slot Otomatis): 
+// Bagian ini memuat logika dinamis di mana sistem otomatis mengubah status slot menjadi "Ditutup" 
+// jika kapasitas penuh (remaining === 0) atau tanggal slot sudah lewat.
 db.ref("slots").on("value", snap=>{
   let html = "";
   const today = new Date().toISOString().split("T")[0];
